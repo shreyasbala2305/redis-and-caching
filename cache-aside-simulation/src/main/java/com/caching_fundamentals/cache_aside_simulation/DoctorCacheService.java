@@ -5,12 +5,14 @@ import java.util.Map;
 
 public class DoctorCacheService {
 
-    private final Map<Long, Doctor> cache = new HashMap<>();
+    private final Map<Long, CacheEntry<Doctor>> cache = new HashMap<>();
 
     private final DoctorRepository doctorRepository;
 
     private int cacheHits = 0;
     private int cacheMisses = 0;
+
+    private static final long TTL_MILLIS = 10_000;
 
     public DoctorCacheService(DoctorRepository doctorRepository) {
         this.doctorRepository = doctorRepository;
@@ -19,34 +21,45 @@ public class DoctorCacheService {
     public Doctor getDoctor(Long id) {
 
         // Step 1: Check the cache.
-        Doctor cachedDoctor = cache.get(id);
+        CacheEntry<Doctor> entry = cache.get(id);
 
-        if (cachedDoctor != null) {
+        if (entry != null) {
 
-            cacheHits++;
+            // Step 2: Check expiration.
+            if (!entry.isExpired()) {
 
-            System.out.println("CACHE: HIT for doctor ID " + id);
+                cacheHits++;
 
-            return cachedDoctor;
+                System.out.println("CACHE: HIT for doctor ID " + id);
+
+                return entry.getValue();
+            }
+
+            // Step 3: Remove expired entry.
+            System.out.println("CACHE: EXPIRED for doctor ID " + id);
+
+            cache.remove(id);
         }
 
-        // Step 2: Cache miss.
+        // Step 4: Cache miss.
         cacheMisses++;
 
         System.out.println("CACHE: MISS for doctor ID " + id);
 
-        // Step 3: Retrieve from the database.
+        // Step 5: Fetch from database.
         Doctor doctor = doctorRepository.findById(id)
                 .orElseThrow(() ->
                         new RuntimeException("Doctor not found: " + id)
                 );
 
-        // Step 4: Store in cache.
-        cache.put(id, doctor);
+        // Step 6: Store with TTL.
+        cache.put(id, new CacheEntry<>(doctor, TTL_MILLIS));
 
-        System.out.println("CACHE: Stored doctor ID " + id);
+        System.out.println(
+                "CACHE: Stored doctor ID " + id
+                        + " with TTL " + TTL_MILLIS + " ms"
+        );
 
-        // Step 5: Return result.
         return doctor;
     }
 
