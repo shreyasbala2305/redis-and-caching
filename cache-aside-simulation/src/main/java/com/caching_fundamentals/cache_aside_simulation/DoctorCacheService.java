@@ -5,119 +5,92 @@ import java.util.Map;
 
 public class DoctorCacheService {
 
-    private final Map<Long, CacheEntry<Doctor>> cache =
-            new HashMap<>();
+    private final DoctorRepository repository;
 
-    private final DoctorRepository doctorRepository;
+    private final Map<Long, CacheEntry<Doctor>> cache = new HashMap<>();
+
+    private final long ttlMillis = 10000;
 
     private int cacheHits = 0;
     private int cacheMisses = 0;
 
-    private static final long TTL_MILLIS = 10_000;
-
-    public DoctorCacheService(DoctorRepository doctorRepository) {
-        this.doctorRepository = doctorRepository;
+    public DoctorCacheService(DoctorRepository repository) {
+        this.repository = repository;
     }
 
     public Doctor getDoctor(Long id) {
 
         CacheEntry<Doctor> entry = cache.get(id);
 
-        if (entry != null) {
+        if (entry != null && !entry.isExpired()) {
+            cacheHits++;
 
-            if (!entry.isExpired()) {
+            System.out.println("CACHE: HIT for doctor ID " + id);
 
-                cacheHits++;
+            return entry.getValue();
+        }
 
-                System.out.println(
-                        "CACHE: HIT for doctor ID " + id
-                );
-
-                return entry.getValue();
-            }
-
-            System.out.println(
-                    "CACHE: EXPIRED for doctor ID " + id
-            );
-
+        if (entry != null && entry.isExpired()) {
+            System.out.println("CACHE: EXPIRED for doctor ID " + id);
             cache.remove(id);
         }
 
         cacheMisses++;
 
-        System.out.println(
-                "CACHE: MISS for doctor ID " + id
-        );
+        System.out.println("CACHE: MISS for doctor ID " + id);
 
-        Doctor doctor = doctorRepository.findById(id)
-                .orElseThrow(() ->
-                        new RuntimeException(
-                                "Doctor not found: " + id
-                        )
-                );
+        Doctor doctor = repository.findById(id);
 
-        cache.put(
-                id,
-                new CacheEntry<>(doctor, TTL_MILLIS)
-        );
+        if (doctor == null) {
+            System.out.println("DATABASE: Doctor not found");
+            return null;
+        }
+
+        cache.put(id, new CacheEntry<>(doctor, ttlMillis));
 
         System.out.println(
                 "CACHE: Stored doctor ID " + id
+                        + " with TTL " + ttlMillis + " ms"
         );
 
         return doctor;
     }
 
-    public void updateDoctorFee(Long id, double newFee) {
-
-        System.out.println(
-                "\nSERVICE: Updating doctor ID " + id
-        );
-
-        // Step 1: Update the database.
-        doctorRepository.updateDoctorFee(id, newFee);
-
-        // Step 2: Invalidate the old cache entry.
-        evictDoctor(id);
-    }
-
     public void evictDoctor(Long id) {
-
-        CacheEntry<Doctor> removedEntry = cache.remove(id);
-
-        if (removedEntry != null) {
-
+        if (cache.remove(id) != null) {
             System.out.println(
-                    "CACHE: Evicted doctor ID " + id
+                    "CACHE: EVICTED doctor ID " + id
             );
-
         } else {
-
             System.out.println(
-                    "CACHE: No existing entry for doctor ID " + id
+                    "CACHE: No entry to evict for doctor ID " + id
             );
         }
     }
 
-    public void displayCacheStatistics() {
+    public void updateDoctorFee(Long id, double newFee) {
+
+        System.out.println("\n===== UPDATE DOCTOR =====");
+
+        repository.updateDoctorFee(id, newFee);
+
+        // Invalidate the old cached value after the database update.
+        evictDoctor(id);
+    }
+
+    public void printStatistics() {
 
         int totalLookups = cacheHits + cacheMisses;
 
         double hitRatio = totalLookups == 0
                 ? 0
-                : (cacheHits * 100.0) / totalLookups;
+                : (double) cacheHits / totalLookups * 100;
 
         System.out.println("\n----- CACHE STATISTICS -----");
-
         System.out.println("Cache Hits: " + cacheHits);
         System.out.println("Cache Misses: " + cacheMisses);
         System.out.println("Total Lookups: " + totalLookups);
-
-        System.out.printf(
-                "Hit Ratio: %.2f%%%n",
-                hitRatio
-        );
-
+        System.out.printf("Hit Ratio: %.2f%%%n", hitRatio);
         System.out.println("----------------------------");
     }
 }

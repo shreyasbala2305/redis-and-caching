@@ -4,48 +4,45 @@ public class CacheAsideDemo {
 
     public static void main(String[] args) {
 
-        DoctorRepository repository =
-                new DoctorRepository();
+        DoctorRepository repository = new DoctorRepository();
 
         DoctorCacheService cacheService =
                 new DoctorCacheService(repository);
 
         System.out.println("\n===== FIRST REQUEST =====");
-
-        Doctor doctor1 = cacheService.getDoctor(42L);
-
-        System.out.println(
-                "RESPONSE: " + doctor1
-        );
+        System.out.println("RESPONSE: " + cacheService.getDoctor(42L));
 
         System.out.println("\n===== SECOND REQUEST =====");
+        System.out.println("RESPONSE: " + cacheService.getDoctor(42L));
 
-        Doctor doctor2 = cacheService.getDoctor(42L);
+        // Scenario 1: Update database without invalidating cache.
+        System.out.println("\n===== DATABASE UPDATE WITHOUT CACHE INVALIDATION =====");
 
-        System.out.println(
-                "RESPONSE: " + doctor2
-        );
+        repository.updateDoctorFee(42L, 700.0);
 
-        System.out.println("\n===== UPDATE DOCTOR FEE =====");
+        System.out.println("\n===== REQUEST AFTER DATABASE UPDATE =====");
+        System.out.println("RESPONSE: " + cacheService.getDoctor(42L));
 
-        cacheService.updateDoctorFee(42L, 700.0);
+        // Scenario 2: Manually evict stale cache.
+        System.out.println("\n===== MANUAL CACHE INVALIDATION =====");
 
-        System.out.println("\n===== THIRD REQUEST AFTER UPDATE =====");
+        cacheService.evictDoctor(42L);
 
-        Doctor doctor3 = cacheService.getDoctor(42L);
+        System.out.println("\n===== REQUEST AFTER CACHE INVALIDATION =====");
+        System.out.println("RESPONSE: " + cacheService.getDoctor(42L));
 
-        System.out.println(
-                "RESPONSE: " + doctor3
-        );
+        System.out.println("\n===== NEXT REQUEST =====");
+        System.out.println("RESPONSE: " + cacheService.getDoctor(42L));
 
-        System.out.println("\n===== FOURTH REQUEST =====");
+        // Scenario 3: Correct update through the cache service.
+        cacheService.updateDoctorFee(42L, 900.0);
 
-        Doctor doctor4 = cacheService.getDoctor(42L);
+        System.out.println("\n===== REQUEST AFTER SERVICE UPDATE =====");
+        System.out.println("RESPONSE: " + cacheService.getDoctor(42L));
 
-        System.out.println(
-                "RESPONSE: " + doctor4
-        );
+        System.out.println("\n===== FINAL REQUEST =====");
+        System.out.println("RESPONSE: " + cacheService.getDoctor(42L));
 
-        cacheService.displayCacheStatistics();
+        cacheService.printStatistics();
     }
 }
