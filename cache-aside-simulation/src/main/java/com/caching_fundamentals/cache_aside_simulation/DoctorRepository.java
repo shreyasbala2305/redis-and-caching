@@ -7,6 +7,8 @@ public class DoctorRepository {
 
     private final Map<Long, Doctor> database = new HashMap<>();
 
+    private int databaseCalls = 0;
+
     public DoctorRepository() {
         database.put(42L, new Doctor(
                 42L, "Dr. Rahul Sharma", "Cardiology", 500.0
@@ -18,11 +20,16 @@ public class DoctorRepository {
     }
 
     public Doctor findById(Long id) {
+
+        databaseCalls++;
+
         System.out.println("DATABASE: Fetching doctor ID " + id);
+
         return database.get(id);
     }
 
     public void updateDoctorFee(Long id, double newFee) {
+
         Doctor existing = database.get(id);
 
         if (existing == null) {
@@ -44,5 +51,13 @@ public class DoctorRepository {
                 "DATABASE: Updated doctor ID " + id
                         + " fee to " + newFee
         );
+    }
+
+    public int getDatabaseCalls() {
+        return databaseCalls;
+    }
+
+    public void resetDatabaseCalls() {
+        databaseCalls = 0;
     }
 }

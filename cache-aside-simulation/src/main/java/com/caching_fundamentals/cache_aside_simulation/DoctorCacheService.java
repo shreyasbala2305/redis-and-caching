@@ -23,6 +23,7 @@ public class DoctorCacheService {
         CacheEntry<Doctor> entry = cache.get(id);
 
         if (entry != null && !entry.isExpired()) {
+
             cacheHits++;
 
             System.out.println("CACHE: HIT for doctor ID " + id);
@@ -31,7 +32,9 @@ public class DoctorCacheService {
         }
 
         if (entry != null && entry.isExpired()) {
+
             System.out.println("CACHE: EXPIRED for doctor ID " + id);
+
             cache.remove(id);
         }
 
@@ -58,39 +61,45 @@ public class DoctorCacheService {
 
     public void evictDoctor(Long id) {
         if (cache.remove(id) != null) {
-            System.out.println(
-                    "CACHE: EVICTED doctor ID " + id
-            );
-        } else {
-            System.out.println(
-                    "CACHE: No entry to evict for doctor ID " + id
-            );
+            System.out.println("CACHE: EVICTED doctor ID " + id);
         }
     }
 
     public void updateDoctorFee(Long id, double newFee) {
 
-        System.out.println("\n===== UPDATE DOCTOR =====");
-
         repository.updateDoctorFee(id, newFee);
 
-        // Invalidate the old cached value after the database update.
         evictDoctor(id);
     }
 
     public void printStatistics() {
 
-        int totalLookups = cacheHits + cacheMisses;
+        int totalRequests = cacheHits + cacheMisses;
 
-        double hitRatio = totalLookups == 0
+        double hitRatio = totalRequests == 0
                 ? 0
-                : (double) cacheHits / totalLookups * 100;
+                : (double) cacheHits / totalRequests * 100;
 
-        System.out.println("\n----- CACHE STATISTICS -----");
+        double missRatio = totalRequests == 0
+                ? 0
+                : (double) cacheMisses / totalRequests * 100;
+
+        int databaseCalls = repository.getDatabaseCalls();
+
+        int databaseCallsSaved = totalRequests - databaseCalls;
+
+        System.out.println("\n========== CACHE PERFORMANCE ==========");
+
+        System.out.println("Total Requests: " + totalRequests);
         System.out.println("Cache Hits: " + cacheHits);
         System.out.println("Cache Misses: " + cacheMisses);
-        System.out.println("Total Lookups: " + totalLookups);
+
         System.out.printf("Hit Ratio: %.2f%%%n", hitRatio);
-        System.out.println("----------------------------");
+        System.out.printf("Miss Ratio: %.2f%%%n", missRatio);
+
+        System.out.println("Database Calls: " + databaseCalls);
+        System.out.println("Database Calls Saved: " + databaseCallsSaved);
+
+        System.out.println("=======================================");
     }
 }
