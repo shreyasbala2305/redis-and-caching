@@ -2,9 +2,10 @@ package com.caching_fundamentals.cache_aside_simulation;
 
 public class CacheAsideDemo {
 
-    public static void main(String[] args) throws InterruptedException {
+    public static void main(String[] args) {
 
-        DoctorRepository repository = new DoctorRepository();
+        DoctorRepository repository =
+                new DoctorRepository();
 
         DoctorCacheService cacheService =
                 new DoctorCacheService(repository);
@@ -13,37 +14,37 @@ public class CacheAsideDemo {
 
         Doctor doctor1 = cacheService.getDoctor(42L);
 
-        System.out.println("RESPONSE: " + doctor1);
-
+        System.out.println(
+                "RESPONSE: " + doctor1
+        );
 
         System.out.println("\n===== SECOND REQUEST =====");
 
         Doctor doctor2 = cacheService.getDoctor(42L);
 
-        System.out.println("RESPONSE: " + doctor2);
+        System.out.println(
+                "RESPONSE: " + doctor2
+        );
 
+        System.out.println("\n===== UPDATE DOCTOR FEE =====");
 
-        System.out.println("\n===== WAITING FOR CACHE EXPIRATION =====");
+        cacheService.updateDoctorFee(42L, 700.0);
 
-        Thread.sleep(5_000);
-
-        System.out.println("\n===== THIRD REQUEST AFTER 5 SECONDS =====");
+        System.out.println("\n===== THIRD REQUEST AFTER UPDATE =====");
 
         Doctor doctor3 = cacheService.getDoctor(42L);
 
-        System.out.println("RESPONSE: " + doctor3);
+        System.out.println(
+                "RESPONSE: " + doctor3
+        );
 
-
-        System.out.println("\n===== WAITING FOR CACHE EXPIRATION =====");
-
-        Thread.sleep(6_000);
-
-        System.out.println("\n===== FOURTH REQUEST AFTER EXPIRATION =====");
+        System.out.println("\n===== FOURTH REQUEST =====");
 
         Doctor doctor4 = cacheService.getDoctor(42L);
 
-        System.out.println("RESPONSE: " + doctor4);
-
+        System.out.println(
+                "RESPONSE: " + doctor4
+        );
 
         cacheService.displayCacheStatistics();
     }

@@ -5,7 +5,8 @@ import java.util.Map;
 
 public class DoctorCacheService {
 
-    private final Map<Long, CacheEntry<Doctor>> cache = new HashMap<>();
+    private final Map<Long, CacheEntry<Doctor>> cache =
+            new HashMap<>();
 
     private final DoctorRepository doctorRepository;
 
@@ -20,54 +21,82 @@ public class DoctorCacheService {
 
     public Doctor getDoctor(Long id) {
 
-        // Step 1: Check the cache.
         CacheEntry<Doctor> entry = cache.get(id);
 
         if (entry != null) {
 
-            // Step 2: Check expiration.
             if (!entry.isExpired()) {
 
                 cacheHits++;
 
-                System.out.println("CACHE: HIT for doctor ID " + id);
+                System.out.println(
+                        "CACHE: HIT for doctor ID " + id
+                );
 
                 return entry.getValue();
             }
 
-            // Step 3: Remove expired entry.
-            System.out.println("CACHE: EXPIRED for doctor ID " + id);
+            System.out.println(
+                    "CACHE: EXPIRED for doctor ID " + id
+            );
 
             cache.remove(id);
         }
 
-        // Step 4: Cache miss.
         cacheMisses++;
 
-        System.out.println("CACHE: MISS for doctor ID " + id);
+        System.out.println(
+                "CACHE: MISS for doctor ID " + id
+        );
 
-        // Step 5: Fetch from database.
         Doctor doctor = doctorRepository.findById(id)
                 .orElseThrow(() ->
-                        new RuntimeException("Doctor not found: " + id)
+                        new RuntimeException(
+                                "Doctor not found: " + id
+                        )
                 );
 
-        // Step 6: Store with TTL.
-        cache.put(id, new CacheEntry<>(doctor, TTL_MILLIS));
+        cache.put(
+                id,
+                new CacheEntry<>(doctor, TTL_MILLIS)
+        );
 
         System.out.println(
                 "CACHE: Stored doctor ID " + id
-                        + " with TTL " + TTL_MILLIS + " ms"
         );
 
         return doctor;
     }
 
+    public void updateDoctorFee(Long id, double newFee) {
+
+        System.out.println(
+                "\nSERVICE: Updating doctor ID " + id
+        );
+
+        // Step 1: Update the database.
+        doctorRepository.updateDoctorFee(id, newFee);
+
+        // Step 2: Invalidate the old cache entry.
+        evictDoctor(id);
+    }
+
     public void evictDoctor(Long id) {
 
-        cache.remove(id);
+        CacheEntry<Doctor> removedEntry = cache.remove(id);
 
-        System.out.println("CACHE: Evicted doctor ID " + id);
+        if (removedEntry != null) {
+
+            System.out.println(
+                    "CACHE: Evicted doctor ID " + id
+            );
+
+        } else {
+
+            System.out.println(
+                    "CACHE: No existing entry for doctor ID " + id
+            );
+        }
     }
 
     public void displayCacheStatistics() {
@@ -84,7 +113,10 @@ public class DoctorCacheService {
         System.out.println("Cache Misses: " + cacheMisses);
         System.out.println("Total Lookups: " + totalLookups);
 
-        System.out.printf("Hit Ratio: %.2f%%%n", hitRatio);
+        System.out.printf(
+                "Hit Ratio: %.2f%%%n",
+                hitRatio
+        );
 
         System.out.println("----------------------------");
     }

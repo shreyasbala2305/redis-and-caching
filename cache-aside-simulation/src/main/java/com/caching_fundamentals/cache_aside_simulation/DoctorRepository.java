@@ -6,7 +6,6 @@ import java.util.Optional;
 
 public class DoctorRepository {
 
-    // Simulates a database table.
     private final Map<Long, Doctor> database = new HashMap<>();
 
     public DoctorRepository() {
@@ -34,7 +33,9 @@ public class DoctorRepository {
 
     public Optional<Doctor> findById(Long id) {
 
-        System.out.println("DATABASE: Fetching doctor ID " + id);
+        System.out.println(
+                "DATABASE: Fetching doctor ID " + id
+        );
 
         return Optional.ofNullable(database.get(id));
     }
@@ -43,12 +44,16 @@ public class DoctorRepository {
 
         Doctor doctor = database.get(id);
 
-        if (doctor != null) {
-            doctor.setConsultationFee(newFee);
-
-            System.out.println(
-                    "DATABASE: Updated consultation fee to " + newFee
+        if (doctor == null) {
+            throw new RuntimeException(
+                    "Doctor not found: " + id
             );
         }
+
+        doctor.setConsultationFee(newFee);
+
+        System.out.println(
+                "DATABASE: Updated consultation fee to ₹" + newFee
+        );
     }
 }
