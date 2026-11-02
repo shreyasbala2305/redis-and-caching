@@ -23,34 +23,20 @@ public class DoctorRepository {
 
         databaseCalls++;
 
-        System.out.println("DATABASE: Fetching doctor ID " + id);
+        simulateDatabaseLatency();
 
         return database.get(id);
     }
 
-    public void updateDoctorFee(Long id, double newFee) {
-
-        Doctor existing = database.get(id);
-
-        if (existing == null) {
-            throw new IllegalArgumentException(
-                    "Doctor not found with ID: " + id
+    private void simulateDatabaseLatency() {
+        try {
+            Thread.sleep(50);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException(
+                    "Database simulation interrupted", e
             );
         }
-
-        Doctor updatedDoctor = new Doctor(
-                existing.getId(),
-                existing.getName(),
-                existing.getSpecialization(),
-                newFee
-        );
-
-        database.put(id, updatedDoctor);
-
-        System.out.println(
-                "DATABASE: Updated doctor ID " + id
-                        + " fee to " + newFee
-        );
     }
 
     public int getDatabaseCalls() {

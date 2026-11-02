@@ -65,13 +65,6 @@ public class DoctorCacheService {
         }
     }
 
-    public void updateDoctorFee(Long id, double newFee) {
-
-        repository.updateDoctorFee(id, newFee);
-
-        evictDoctor(id);
-    }
-
     public void printStatistics() {
 
         int totalRequests = cacheHits + cacheMisses;
